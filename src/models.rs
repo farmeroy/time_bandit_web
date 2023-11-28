@@ -22,7 +22,7 @@ pub struct UserEmail(pub String);
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct User {
     pub id: UserId,
-    pub uuid: String,
+    pub uuid: Uuid,
     pub email: UserEmail,
 }
 
@@ -36,19 +36,29 @@ pub struct Task {
     pub created_on: DateTime<Utc>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NewTask {
     pub user_id: UserId,
     pub name: String,
     pub description: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Event {
     pub id: EventId,
-    pub uuid: String,
+    pub uuid: Uuid,
     pub user_id: UserId,
     pub task_id: TaskId,
     pub date_began: DateTime<Utc>,
-    pub duration: i32,
-    pub notes: String,
+    pub duration: i64,
+    pub notes: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NewEvent {
+    pub user_id: UserId,
+    pub task_id: TaskId,
+    pub date_began: DateTime<Utc>,
+    pub duration: i64,
+    pub notes: Option<String>,
 }

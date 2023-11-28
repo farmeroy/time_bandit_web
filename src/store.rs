@@ -4,7 +4,7 @@ use sqlx::{
 };
 
 use crate::{
-    models::{NewTask, Task, TaskId, UserId},
+    models::{Event, EventId, NewEvent, NewTask, Task, TaskId, UserId},
     NewUser,
 };
 
@@ -64,6 +64,37 @@ impl Store {
         .await
         {
             Ok(task) => Ok(task),
+            Err(e) => {
+                tracing::event!(tracing::Level::ERROR, "{:?}", e);
+                Err(e)
+            }
+        }
+    }
+
+    pub async fn add_event(self, new_event: NewEvent) -> Result<Event, Error> {
+        match sqlx::query(
+            "INSERT INTO events (user_id, task_id, date_began, duration, notes)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id, uuid, user_id, task_id, date_began, duration, notes",
+        )
+        .bind(new_event.user_id.0)
+        .bind(new_event.task_id.0)
+        .bind(new_event.date_began)
+        .bind(new_event.duration)
+        .bind(new_event.notes)
+        .map(|row: PgRow| Event {
+            id: EventId(row.get("id")),
+            uuid: row.get("uuid"),
+            user_id: UserId(row.get("user_id")),
+            task_id: TaskId(row.get("task_id")),
+            date_began: row.get("date_began"),
+            duration: row.get("duration"),
+            notes: Some(row.get("notes")),
+        })
+        .fetch_one(&self.connection)
+        .await
+        {
+            Ok(event) => Ok(event),
             Err(e) => {
                 tracing::event!(tracing::Level::ERROR, "{:?}", e);
                 Err(e)

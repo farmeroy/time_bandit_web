@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use models::{NewTask, Task, User, UserEmail};
+use models::{Event, NewEvent, NewTask, Task, User, UserEmail};
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
@@ -47,17 +47,17 @@ async fn router() -> Router {
         .route("/", get(|| async { "Time Bandit" }))
         .route("/users/add_user", post(add_user))
         .route("/tasks/add_task", post(add_task))
+        .route("/events/add_event", post(add_event))
         .with_state(state)
 }
 
 async fn add_user(
-    state: State<AppState>,
-    new_user: Json<NewUser>,
+    State(state): State<AppState>,
+    Json(new_user): Json<NewUser>,
 ) -> Result<Json<bool>, (StatusCode, String)> {
     let res = state
         .store
-        .clone()
-        .add_user(new_user.0)
+        .add_user(new_user)
         .await
         .map_err(internal_error)?;
     info!("{:?}", res);
@@ -65,13 +65,25 @@ async fn add_user(
 }
 
 async fn add_task(
-    state: State<AppState>,
-    new_task: Json<NewTask>,
+    State(state): State<AppState>,
+    Json(new_task): Json<NewTask>,
 ) -> Result<Json<Task>, (StatusCode, String)> {
     let res = state
         .store
-        .clone()
-        .add_task(new_task.0)
+        .add_task(new_task)
+        .await
+        .map_err(internal_error)?;
+    info!("{:?}", res);
+    Ok(Json(res))
+}
+
+async fn add_event(
+    State(state): State<AppState>,
+    Json(new_event): Json<NewEvent>,
+) -> Result<Json<Event>, (StatusCode, String)> {
+    let res = state
+        .store
+        .add_event(new_event)
         .await
         .map_err(internal_error)?;
     info!("{:?}", res);

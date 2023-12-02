@@ -13,7 +13,9 @@ use axum::{
 };
 
 use crate::models::NewUser;
+use dotenv::dotenv;
 
+mod config;
 mod models;
 mod store;
 
@@ -25,7 +27,16 @@ struct AppState {
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt().init();
-    let app = router().await;
+    dotenv().ok();
+    let config = config::Config::init();
+    let store = store::Store::new(&config.database_url)
+        .await
+        .expect("Cannot connect to database");
+    sqlx::migrate!()
+        .run(&store.clone().connection)
+        .await
+        .expect("Cannot run migrations");
+    let app = router(store).await;
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
@@ -34,14 +45,7 @@ async fn main() {
     info!("Listening on {addr}");
 }
 
-async fn router() -> Router {
-    let store = store::Store::new("postgres://raffaele:rust_crud@localhost:5432/time_bandit")
-        .await
-        .expect("Cannot connect to database");
-    sqlx::migrate!()
-        .run(&store.clone().connection)
-        .await
-        .expect("Cannot run migrations");
+async fn router(store: store::Store) -> Router {
     let state = AppState { store };
     Router::new()
         .layer(TraceLayer::new_for_http())

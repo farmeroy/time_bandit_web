@@ -1,11 +1,12 @@
 use std::net::SocketAddr;
 
-use models::{Event, NewEvent, NewTask, Task, User, UserEmail};
+use models::{Event, NewEvent, NewTask, Task, User, UserEmail, UserId};
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
 use axum::{
-    extract::State,
+    debug_handler,
+    extract::{Path, State},
     http::StatusCode,
     routing::{get, post},
     Json, Router,
@@ -48,6 +49,7 @@ async fn router() -> Router {
         .route("/users/add_user", post(add_user))
         .route("/tasks/add_task", post(add_task))
         .route("/events/add_event", post(add_event))
+        .route("/tasks/:user_id", get(get_tasks_with_events))
         .with_state(state)
 }
 
@@ -84,6 +86,20 @@ async fn add_event(
     let res = state
         .store
         .add_event(new_event)
+        .await
+        .map_err(internal_error)?;
+    info!("{:?}", res);
+    Ok(Json(res))
+}
+
+#[debug_handler]
+async fn get_tasks_with_events(
+    State(state): State<AppState>,
+    Path(user_id): Path<UserId>,
+) -> Result<Json<Vec<Task>>, (StatusCode, String)> {
+    let res = state
+        .store
+        .get_tasks_by_user(user_id)
         .await
         .map_err(internal_error)?;
     info!("{:?}", res);

@@ -4,7 +4,7 @@ use sqlx::{
 };
 
 use crate::{
-    models::{Event, EventId, NewEvent, NewTask, Task, TaskId, UserId},
+    models::{Event, EventId, NewEvent, NewTask, Task, TaskId, TaskWithEvents, User, UserId},
     NewUser,
 };
 
@@ -98,6 +98,62 @@ impl Store {
             Err(e) => {
                 tracing::event!(tracing::Level::ERROR, "{:?}", e);
                 Err(e)
+            }
+        }
+    }
+
+    pub async fn get_tasks_by_user(self, user_id: UserId) -> Result<Vec<Task>, Error> {
+        match sqlx::query(
+            "
+            SELECT id, uuid, user_id, name, description, created_on
+            FROM tasks
+            WHERE user_id = $1
+            ",
+        )
+        .bind(user_id.0)
+        .map(|row: PgRow| Task {
+            id: TaskId(row.get("id")),
+            uuid: row.get("uuid"),
+            user_id: UserId(row.get("user_id")),
+            name: row.get("name"),
+            description: Some(row.get("description")),
+            created_on: row.get("created_on"),
+        })
+        .fetch_all(&self.connection)
+        .await
+        {
+            Ok(tasks) => Ok(tasks),
+            Err(err) => {
+                tracing::event!(tracing::Level::ERROR, "{:?}", err);
+                Err(err)
+            }
+        }
+    }
+
+    pub async fn get_events_by_task(self, task_id: TaskId) -> Result<Vec<Event>, Error> {
+        match sqlx::query(
+            "
+            SELECT id, uuid, task_id, user_id, date_began, duration, notes
+            FROM events
+            WHERE task_id = $1
+            ",
+        )
+        .map(|row: PgRow| Event {
+            id: EventId(row.get("id")),
+            uuid: row.get("uuid"),
+            task_id: TaskId(row.get("task_id")),
+            user_id: UserId(row.get("user_id")),
+            date_began: row.get("date_began"),
+            duration: row.get("duration"),
+            notes: Some(row.get("notes")),
+        })
+        .fetch_all(&self.connection)
+        .await
+        {
+            Ok(events) => Ok(events),
+            Err(err) => {
+                tracing::event!(tracing::Level::ERROR, "{:?}", err);
+                Err(err)
             }
         }
     }

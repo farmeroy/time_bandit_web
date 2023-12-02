@@ -62,3 +62,9 @@ pub struct NewEvent {
     pub duration: i64,
     pub notes: Option<String>,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TaskWithEvents {
+    pub task: Task,
+    pub events: Vec<Event>,
+}

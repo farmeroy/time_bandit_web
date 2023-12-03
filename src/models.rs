@@ -3,9 +3,13 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NewUser {
+pub struct LoginDetails {
     pub email: UserEmail,
+    pub password: String,
 }
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Clone)]
+pub struct SessionId(pub String);
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Clone)]
 pub struct UserId(pub i32);
@@ -24,6 +28,7 @@ pub struct User {
     pub id: UserId,
     pub uuid: Uuid,
     pub email: UserEmail,
+    pub password: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

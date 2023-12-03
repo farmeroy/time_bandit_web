@@ -1,11 +1,12 @@
+use bcrypt;
 use sqlx::{
     postgres::{PgPool, PgPoolOptions, PgRow},
     Error, Row,
 };
 
 use crate::{
-    models::{Event, EventId, NewEvent, NewTask, Task, TaskId, TaskWithEvents, User, UserId},
-    NewUser,
+    models::{Event, EventId, NewEvent, NewTask, SessionId, Task, TaskId, User, UserEmail, UserId},
+    LoginDetails,
 };
 
 #[derive(Clone, Debug)]
@@ -28,16 +29,65 @@ impl Store {
         })
     }
 
-    pub async fn add_user(self, new_user: NewUser) -> Result<bool, Error> {
+    pub async fn register_account(self, new_user: LoginDetails) -> Result<String, Error> {
+        let hashed_password = bcrypt::hash(new_user.password, 10).unwrap();
+        let new_user = LoginDetails {
+            email: new_user.email,
+            password: hashed_password,
+        };
         match sqlx::query(
-            "INSERT INTO users (email)
-            VALUES ($1)",
+            "INSERT INTO users (email, password)
+            VALUES ($1, $2)",
         )
         .bind(new_user.email.0)
+        .bind(new_user.password)
         .execute(&self.connection)
         .await
         {
-            Ok(_) => Ok(true),
+            Ok(_) => Ok("Created account!".to_string()),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub async fn get_account(self, email: UserEmail) -> Result<User, Error> {
+        match sqlx::query("SELECT id, uuid, email, password FROM users WHERE email = &1")
+            .bind(email.0)
+            .map(|row: PgRow| User {
+                id: UserId(row.get("id")),
+                uuid: row.get("uuid"),
+                email: UserEmail(row.get("email")),
+                password: row.get("password"),
+            })
+            .fetch_one(&self.connection)
+            .await
+        {
+            Ok(user) => Ok(user),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub async fn create_session(self, user: User, password: String) -> Result<SessionId, Error> {
+        if bcrypt::verify(password, &user.password).is_err() {
+            return Err(Error::RowNotFound);
+        }
+
+        let session_id = rand::random::<u64>().to_string();
+
+        match sqlx::query(
+            "
+            INSERT INTO sessions (session_id, user_id)
+            VALUES ($1, $2)
+            ON CONFLICT (user_id)
+            DO UPDATE SET session_id = EXCLUDED.session_id
+            RETURNING session_id",
+        )
+        .bind(&session_id)
+        .bind(user.id.0)
+        .map(|row: PgRow| SessionId(row.get("session_id")))
+        .fetch_one(&self.connection)
+        .await
+        {
+            Ok(session_id) => Ok(session_id),
             Err(e) => Err(e),
         }
     }

@@ -1,13 +1,12 @@
 use std::net::SocketAddr;
 
-use http::HeaderMap;
 use models::{Event, NewEvent, NewTask, Task, UserId};
 use sqlx::{postgres::PgRow, PgPool, Pool, Postgres, Row};
 use tracing::info;
 
 use axum::{
     async_trait, debug_handler,
-    extract::{FromRef, FromRequestParts, Path, Request, State},
+    extract::{FromRef, FromRequestParts, Request, State},
     http::{request::Parts, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
@@ -23,13 +22,14 @@ mod config;
 mod models;
 mod store;
 
-#[debug_handler(state = AppState)]
-async fn handler(
-    State(state): State<AppState>,
-    State(store): State<store::Store>,
-    State(key): State<Key>,
-) {
-}
+// we define handler here to make the debug handler aware of the AppState
+// #[debug_handler(state = AppState)]
+// async fn handler(
+//     State(state): State<AppState>,
+//     State(store): State<store::Store>,
+//     State(key): State<Key>,
+// ) {
+// }
 
 #[derive(Clone)]
 struct AppState {
@@ -131,7 +131,7 @@ async fn login(
     match user {
         Ok(user) => match state.store.create_session(user, login.password).await {
             Ok(session_id) => {
-                let cookie = Cookie::build(("foo", session_id.0))
+                let cookie = Cookie::build(("time_bandit_auth_token_v1", session_id.0))
                     .secure(true)
                     .same_site(SameSite::Strict)
                     .http_only(true)
@@ -148,10 +148,15 @@ async fn login(
 async fn auth(
     State(state): State<AppState>,
     jar: PrivateCookieJar,
+    // we create a mutable request in order to add extensions
     mut request: Request,
+    // this allows us to call the request
     next: Next,
 ) -> (PrivateCookieJar, Response) {
-    let Some(cookie) = jar.get("foo").map(|cookie| cookie.value().to_owned()) else {
+    let Some(cookie) = jar
+        .get("time_bandit_auth_token_v1")
+        .map(|cookie| cookie.value().to_owned())
+    else {
         println!("Couldn't find a cookie in the jar");
         return (jar, (StatusCode::UNAUTHORIZED).into_response());
     };
@@ -163,6 +168,7 @@ async fn auth(
 
     match find_session {
         Ok(res) => {
+            // send the extension to the next request
             request.extensions_mut().insert(res);
             (jar, next.run(request).await)
         }
@@ -172,6 +178,7 @@ async fn auth(
 
 async fn add_task(
     State(state): State<AppState>,
+    // this extension is is given by auth and extracted here
     Extension(user_id): Extension<UserId>,
     Json(new_task): Json<NewTask>,
 ) -> Result<Json<Task>, (StatusCode, String)> {
@@ -191,8 +198,16 @@ async fn add_task(
 
 async fn add_event(
     State(state): State<AppState>,
+    Extension(user_id): Extension<UserId>,
     Json(new_event): Json<NewEvent>,
 ) -> Result<Json<Event>, (StatusCode, String)> {
+    let new_event = NewEvent {
+        user_id,
+        task_id: new_event.task_id,
+        date_began: new_event.date_began,
+        duration: new_event.duration,
+        notes: new_event.notes,
+    };
     let res = state
         .store
         .add_event(new_event)

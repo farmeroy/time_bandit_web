@@ -3,6 +3,7 @@ use sqlx::{
     postgres::{PgPool, PgPoolOptions, PgRow},
     Error, Row,
 };
+use tracing::info;
 
 use crate::{
     models::{Event, EventId, NewEvent, NewTask, SessionId, Task, TaskId, User, UserEmail, UserId},
@@ -50,7 +51,7 @@ impl Store {
     }
 
     pub async fn get_account(self, email: UserEmail) -> Result<User, Error> {
-        match sqlx::query("SELECT id, uuid, email, password FROM users WHERE email = &1")
+        match sqlx::query("SELECT id, uuid, email, password FROM users WHERE email = $1")
             .bind(email.0)
             .map(|row: PgRow| User {
                 id: UserId(row.get("id")),
@@ -62,12 +63,17 @@ impl Store {
             .await
         {
             Ok(user) => Ok(user),
-            Err(e) => Err(e),
+            Err(e) => {
+                info!("{:?}", e);
+                Err(e)
+            }
         }
     }
 
     pub async fn create_session(self, user: User, password: String) -> Result<SessionId, Error> {
+        info!("Create session");
         if bcrypt::verify(password, &user.password).is_err() {
+            println!("row not found");
             return Err(Error::RowNotFound);
         }
 
@@ -79,7 +85,8 @@ impl Store {
             VALUES ($1, $2)
             ON CONFLICT (user_id)
             DO UPDATE SET session_id = EXCLUDED.session_id
-            RETURNING session_id",
+            RETURNING session_id
+            ",
         )
         .bind(&session_id)
         .bind(user.id.0)

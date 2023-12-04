@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "dev:backend": "cargo watch -C backend/ -x 'run'"
   },
   "dependencies": {
     "react": "^18",

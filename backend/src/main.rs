@@ -1,13 +1,21 @@
 use std::net::SocketAddr;
 
+use http::{
+    header::{
+        ACCEPT, ACCESS_CONTROL_ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_ORIGIN, AUTHORIZATION,
+        CONTENT_TYPE, COOKIE, ORIGIN,
+    },
+    HeaderValue,
+};
 use models::{Event, NewEvent, NewTask, Task, UserId};
 use sqlx::{postgres::PgRow, PgPool, Pool, Postgres, Row};
+use tower_http::cors::CorsLayer;
 use tracing::info;
 
 use axum::{
     async_trait, debug_handler,
     extract::{FromRef, FromRequestParts, Request, State},
-    http::{request::Parts, StatusCode},
+    http::{request::Parts, Method, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -94,15 +102,29 @@ async fn router(store: store::Store) -> Router {
         store,
         key: Key::generate(),
     };
+    let cors = CorsLayer::new()
+        .allow_headers([
+            COOKIE,
+            ORIGIN,
+            AUTHORIZATION,
+            ACCEPT,
+            ACCESS_CONTROL_ALLOW_ORIGIN,
+            ACCESS_CONTROL_ALLOW_CREDENTIALS,
+            CONTENT_TYPE,
+        ])
+        .allow_credentials(true)
+        .allow_methods([Method::GET, Method::POST])
+        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap());
     Router::new()
-        .route("/", get(|| async { "Time Bandit" }))
         .route("/tasks/add_task", post(add_task))
         .route("/events/add_event", post(add_event))
         .route("/tasks", get(get_tasks_with_events))
         .route_layer(middleware::from_fn_with_state(state.clone(), auth))
         .route("/users/register", post(register_user))
         .route("/users/login", post(login))
+        .route("/", get(|| async { "Time Bandit" }))
         .with_state(state)
+        .layer(cors)
 }
 
 async fn register_user(

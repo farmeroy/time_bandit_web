@@ -30,15 +30,6 @@ mod config;
 mod models;
 mod store;
 
-// we define handler here to make the debug handler aware of the AppState
-// #[debug_handler(state = AppState)]
-// async fn handler(
-//     State(state): State<AppState>,
-//     State(store): State<store::Store>,
-//     State(key): State<Key>,
-// ) {
-// }
-
 #[derive(Clone)]
 struct AppState {
     store: store::Store,
@@ -119,7 +110,11 @@ async fn router(store: store::Store) -> Router {
         .route("/tasks/add_task", post(add_task))
         .route("/events/add_event", post(add_event))
         .route("/tasks", get(get_tasks_with_events))
-        .route_layer(middleware::from_fn_with_state(state.clone(), auth))
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ))
+        .route("/auth", get(auth_gateway))
         .route("/users/register", post(register_user))
         .route("/users/login", post(login))
         .route("/", get(|| async { "Time Bandit" }))
@@ -167,7 +162,28 @@ async fn login(
     }
 }
 
-async fn auth(
+/// A simple endopoint to check if the cookie session is valid
+async fn auth_gateway(
+    State(state): State<AppState>,
+    jar: PrivateCookieJar,
+) -> Result<Json<UserId>, (StatusCode, String)> {
+    let Some(cookie) = jar
+        .get("time_bandit_auth_token_v1")
+        .map(|cookie| cookie.value().to_owned())
+    else {
+        return Err((StatusCode::UNAUTHORIZED, "Unauthorized".to_string()));
+    };
+    let res = sqlx::query("SELECT * FROM sessions WHERE session_id = $1")
+        .bind(cookie)
+        .map(|row: PgRow| UserId(row.get("user_id")))
+        .fetch_one(&state.store.connection)
+        .await
+        .map_err(internal_error)?;
+    info!("{:?}", res);
+    Ok(Json(res))
+}
+
+async fn auth_middleware(
     State(state): State<AppState>,
     jar: PrivateCookieJar,
     // we create a mutable request in order to add extensions

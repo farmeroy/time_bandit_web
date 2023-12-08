@@ -5,15 +5,15 @@ const getTasks = async () => {
   const url = `http://localhost:8080/tasks`;
   const request = new Request(url);
   const cookieStore = cookies();
-  const cookie = cookieStore.get("time_bandit_auth_token_v1");
   try {
+    const cookie = cookieStore.get("time_bandit_auth_token_v1");
     let res = await fetch(request, {
       method: "GET",
       mode: "cors",
       credentials: "include",
       headers: {
         "Access-Control-Allow-Credentials": "true",
-        Cookie: `time_bandit_auth_token_v1=${cookie?.value || ""}`,
+        Cookie: `time_bandit_auth_token_v1=${cookie?.value}`,
       },
     });
     if (res.ok) {
@@ -33,7 +33,6 @@ const Dashboard = async () => {
   if (!tasks) {
     redirect("/");
   }
-  console.log({ tasks });
   return <div>{JSON.stringify(tasks)}</div>;
 };
 

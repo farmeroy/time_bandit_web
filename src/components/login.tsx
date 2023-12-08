@@ -29,7 +29,7 @@ const Login = () => {
         }),
       });
       if (res.ok) {
-        router.push("/dashboard");
+        router.push("/bandit/dashboard");
       } else {
         console.log({ res });
       }

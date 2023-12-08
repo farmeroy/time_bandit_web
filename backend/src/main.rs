@@ -174,13 +174,14 @@ async fn auth(
     mut request: Request,
     // this allows us to call the request
     next: Next,
-) -> (PrivateCookieJar, Response) {
+) -> Result<(PrivateCookieJar, Response), Response> {
     let Some(cookie) = jar
         .get("time_bandit_auth_token_v1")
         .map(|cookie| cookie.value().to_owned())
     else {
-        println!("Couldn't find a cookie in the jar");
-        return (jar, (StatusCode::UNAUTHORIZED).into_response());
+        let res = (StatusCode::UNAUTHORIZED).into_response();
+        info!("{:?}", res);
+        return Err(res);
     };
     let find_session = sqlx::query("SELECT * FROM sessions WHERE session_id = $1")
         .bind(cookie)
@@ -191,10 +192,15 @@ async fn auth(
     match find_session {
         Ok(res) => {
             // send the extension to the next request
+            info!("{:?}", res);
             request.extensions_mut().insert(res);
-            (jar, next.run(request).await)
+            Ok((jar, next.run(request).await))
         }
-        Err(_) => (jar, (StatusCode::UNAUTHORIZED).into_response()),
+        Err(_) => {
+            let res = StatusCode::UNAUTHORIZED.into_response();
+            info!("{:?}", res);
+            return Err(res);
+        }
     }
 }
 

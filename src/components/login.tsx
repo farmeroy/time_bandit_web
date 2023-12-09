@@ -39,10 +39,12 @@ const Login = () => {
   };
   return (
     <form onSubmit={handleSubmit}>
-      <div className="flex justify-between">
-        <label htmlFor="email">Email</label>
+      <div className="flex flex-col my-2 justify-between">
+        <label htmlFor="email" className="label-text text-white">
+          Email
+        </label>
         <input
-          className="text-black"
+          className="input input-sm input-bordered"
           onChange={(e) => setEmail(e.target.value)}
           type="email"
           name="email"
@@ -50,17 +52,21 @@ const Login = () => {
           required
         />
       </div>
-      <div className="flex justify-between">
-        <label htmlFor="password">Password</label>
+      <div className="flex flex-col my-2 justify-between">
+        <label htmlFor="password" className="label-text text-white">
+          Password
+        </label>
         <input
-          className="text-black"
+          className="input input-sm input-bordered"
           onChange={(e) => setPassword(e.target.value)}
           type="password"
           name="password"
           id="password"
         />
       </div>
-      <button type="submit">Submit</button>
+      <button type="submit" className="btn">
+        Submit
+      </button>
     </form>
   );
 };

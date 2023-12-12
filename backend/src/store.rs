@@ -72,10 +72,10 @@ impl Store {
 
     pub async fn create_session(self, user: User, password: String) -> Result<SessionId, Error> {
         info!("Create session");
-        if bcrypt::verify(password, &user.password).is_err() {
-            println!("row not found");
+        if bcrypt::verify(password, &user.password).unwrap_or_default() == false {
+            println!("Unauthorized");
             return Err(Error::RowNotFound);
-        }
+        };
 
         let session_id = rand::random::<u64>().to_string();
 
@@ -195,6 +195,7 @@ impl Store {
             WHERE task_id = $1
             ",
         )
+        .bind(task_id.0)
         .map(|row: PgRow| Event {
             id: EventId(row.get("id")),
             uuid: row.get("uuid"),
@@ -207,11 +208,54 @@ impl Store {
         .fetch_all(&self.connection)
         .await
         {
-            Ok(events) => Ok(events),
+            Ok(events) => {
+                info!("Events from DB: {:?}", events);
+                Ok(events)
+            }
             Err(err) => {
                 tracing::event!(tracing::Level::ERROR, "{:?}", err);
                 Err(err)
             }
         }
     }
+
+    pub async fn get_task_by_id(self, task_id: TaskId) -> Result<Task, Error> {
+        match sqlx::query(
+            "
+            SELECT id, uuid, user_id, name, description, created_on
+            FROM tasks
+            WHERE id = $1
+            ",
+        )
+        .bind(task_id.0)
+        .map(|row: PgRow| Task {
+            id: TaskId(row.get("id")),
+            uuid: row.get("uuid"),
+            user_id: UserId(row.get("user_id")),
+            name: row.get("name"),
+            description: Some(row.get("description")),
+            created_on: row.get("created_on"),
+        })
+        .fetch_one(&self.connection)
+        .await
+        {
+            Ok(task) => Ok(task),
+            Err(err) => {
+                tracing::event!(tracing::Level::ERROR, "{:?}", err);
+                Err(err)
+            }
+        }
+    }
+
+    // pub async fn get_task_with_events_by_task_id(
+    //     self,
+    //     task_id: TaskId,
+    // ) -> Result<Vev<TaskWithEvents>, Error> {
+    //     let task = self
+    //         .clone()
+    //         .get_task_by_id(task_id.clone())
+    //         .await
+    //         .unwrap_err();
+    //     let events = self.get_events_by_task(task_id.clone()).await.unwrap_err();
+    // }
 }

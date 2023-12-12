@@ -7,14 +7,14 @@ use http::{
     },
     HeaderValue,
 };
-use models::{Event, NewEvent, NewTask, Task, UserId};
+use models::{Event, NewEvent, NewTask, Task, TaskId, TaskWithEvents, UserId};
 use sqlx::{postgres::PgRow, PgPool, Pool, Postgres, Row};
 use tower_http::cors::CorsLayer;
 use tracing::info;
 
 use axum::{
     async_trait, debug_handler,
-    extract::{FromRef, FromRequestParts, Request, State},
+    extract::{FromRef, FromRequestParts, Path, Request, State},
     http::{request::Parts, Method, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
@@ -109,7 +109,8 @@ async fn router(store: store::Store) -> Router {
     Router::new()
         .route("/tasks/add_task", post(add_task))
         .route("/events/add_event", post(add_event))
-        .route("/tasks", get(get_tasks_with_events))
+        .route("/tasks", get(get_user_tasks))
+        .route("/tasks/:task_id", get(get_task_with_events))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
@@ -262,7 +263,23 @@ async fn add_event(
 }
 
 #[debug_handler]
-async fn get_tasks_with_events(
+async fn get_events_by_task(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<UserId>,
+    Path(task_id): Path<TaskId>,
+) -> Result<Json<Vec<Event>>, (StatusCode, String)> {
+    info!("Request by user: {:?}", user_id);
+    let res = state
+        .store
+        .get_events_by_task(task_id)
+        .await
+        .map_err(internal_error)?;
+    info!("Request Events: {:?}", res);
+    Ok(Json(res))
+}
+
+#[debug_handler]
+async fn get_user_tasks(
     State(state): State<AppState>,
     Extension(user_id): Extension<UserId>,
 ) -> Result<Json<Vec<Task>>, (StatusCode, String)> {
@@ -273,6 +290,26 @@ async fn get_tasks_with_events(
         .map_err(internal_error)?;
     info!("{:?}", res);
     Ok(Json(res))
+}
+
+async fn get_task_with_events(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<UserId>,
+    Path(task_id): Path<TaskId>,
+) -> Result<Json<TaskWithEvents>, (StatusCode, String)> {
+    let task = state
+        .store
+        .clone()
+        .get_task_by_id(task_id.clone())
+        .await
+        .map_err(internal_error)?;
+    let events = state
+        .store
+        .clone()
+        .get_events_by_task(task_id.clone())
+        .await
+        .map_err(internal_error)?;
+    Ok(Json(TaskWithEvents { task, events }))
 }
 
 fn internal_error<E>(err: E) -> (StatusCode, String)

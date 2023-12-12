@@ -1,8 +1,9 @@
+import TaskView from "@/features/TaskView";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const getSession = async () => {
-  const url = `http://localhost:8080/auth`;
+const getEvents = async (id: number) => {
+  const url = `http://localhost:8080/tasks/${id}`;
   const request = new Request(url);
   const cookieStore = cookies();
   try {
@@ -23,21 +24,19 @@ const getSession = async () => {
       throw error;
     }
   } catch (e) {
-    let res = JSON.stringify(e);
+    JSON.stringify(e);
     console.error(e);
-    return res;
+    return e;
   }
 };
 
-const Session = async ({ children }: { children: React.ReactNode }) => {
-  const session = await getSession();
-  console.log({ session });
-  if (!session) {
-    // session is undefined if there is an error
+const TaskPage = async ({ params }: { params: { id: number } }) => {
+  const res = await getEvents(params.id);
+  console.log({ res: res.status });
+  if (!res) {
     redirect("/");
   }
-
-  return <div>{children}</div>;
+  return <TaskView task={res.task} events={res.events} />;
 };
 
-export default Session;
+export default TaskPage;

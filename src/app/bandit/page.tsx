@@ -1,5 +1,7 @@
+import { redirect } from "next/navigation";
+
 const BanditView = () => {
-  return <div>Time Bandit</div>;
+  redirect("/bandit/dashboard");
 };
 
 export default BanditView;

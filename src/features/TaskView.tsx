@@ -3,7 +3,17 @@ import { IconEdit } from "@tabler/icons-react";
 import { Task } from "@/app/bandit/dashboard/page";
 import { useState } from "react";
 
-const TaskView = ({ task, events }: { task: Task }) => {
+export interface Event {
+  id: number;
+  uuid: string;
+  user_id: number;
+  task_id: number;
+  date_began: Date;
+  duration: number;
+  notes?: string;
+}
+
+const TaskView = ({ task, events }: { task: Task; events: Event[] }) => {
   const [editDescription, setEditDescription] = useState(false);
   return (
     <div className="w-full flex flex-col">
@@ -23,7 +33,17 @@ const TaskView = ({ task, events }: { task: Task }) => {
           )}
         </div>
       </div>
-      <div>{JSON.stringify(events)}</div>
+      <div>
+        {events.length < 1 ? (
+          <p>No events to display</p>
+        ) : (
+          <div>
+            {events.map((event) => (
+              <p key={event.id}>{event.id}</p>
+            ))}
+          </div>
+        )}{" "}
+      </div>
     </div>
   );
 };

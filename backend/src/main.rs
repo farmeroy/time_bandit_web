@@ -115,7 +115,7 @@ async fn router(store: store::Store) -> Router {
             state.clone(),
             auth_middleware,
         ))
-        .route("/auth", get(auth_gateway))
+        .route("/auth", get(get_session))
         .route("/users/register", post(register_user))
         .route("/users/login", post(login))
         .route("/", get(|| async { "Time Bandit" }))
@@ -163,8 +163,9 @@ async fn login(
     }
 }
 
-/// A simple endopoint to check if the cookie session is valid
-async fn auth_gateway(
+/// A simple endpoint to check if the cookie session is valid
+/// This is used in a <Session/> wrapper in the frontend
+async fn get_session(
     State(state): State<AppState>,
     jar: PrivateCookieJar,
 ) -> Result<Json<UserId>, (StatusCode, String)> {
@@ -223,7 +224,7 @@ async fn auth_middleware(
 
 async fn add_task(
     State(state): State<AppState>,
-    // this extension is is given by auth and extracted here
+    // this extension is given by auth and extracted here
     Extension(user_id): Extension<UserId>,
     Json(new_task): Json<NewTask>,
 ) -> Result<Json<Task>, (StatusCode, String)> {

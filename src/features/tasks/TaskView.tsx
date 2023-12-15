@@ -2,6 +2,7 @@
 import { IconEdit } from "@tabler/icons-react";
 import { Task } from "@/app/bandit/dashboard/page";
 import { useState } from "react";
+import TaskStart from "./TaskStart";
 
 export interface Event {
   id: number;
@@ -16,8 +17,9 @@ export interface Event {
 const TaskView = ({ task, events }: { task: Task; events: Event[] }) => {
   const [editDescription, setEditDescription] = useState(false);
   return (
-    <div className="w-full flex flex-col">
-      <h2 className="flex self-center text-xl">Task: {task.name}</h2>
+    <div className="w-full flex flex-col items-center">
+      <h2 className=" text-xl">Task: {task.name}</h2>
+      <TaskStart task={task} />
       <div className="flex flex-wrap rounded-md m-2 p-2">
         <button
           className="mx-1"
@@ -39,7 +41,11 @@ const TaskView = ({ task, events }: { task: Task; events: Event[] }) => {
         ) : (
           <div>
             {events.map((event) => (
-              <p key={event.id}>{event.id}</p>
+              <div key={event.id} className="flex">
+                <p>{event.id}</p>
+                <p>{event.duration}</p>
+                <p>{event.notes}</p>
+              </div>
             ))}
           </div>
         )}{" "}

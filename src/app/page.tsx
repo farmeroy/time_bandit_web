@@ -1,4 +1,3 @@
-import Timer from "@/components/Timer";
 import Login from "../components/login";
 
 export default function Home() {
@@ -11,7 +10,6 @@ export default function Home() {
         catch them, and take a hold of your most precoius asset.
       </p>
       <div>
-        <Timer />
         <Login />
       </div>
     </main>

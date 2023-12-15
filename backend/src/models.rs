@@ -39,6 +39,7 @@ pub struct Task {
     pub name: String,
     pub description: Option<String>,
     pub created_on: DateTime<Utc>,
+    // changed_on field
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

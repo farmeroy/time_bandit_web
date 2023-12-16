@@ -1,12 +1,14 @@
 "use client";
 
 import { Task } from "@/app/bandit/dashboard/page";
-import { useEffect, useState } from "react";
+import { Event as TaskEvent } from "@/features/tasks/TaskView";
+import { useEffect, useState, Dispatch, SetStateAction } from "react";
 
 interface StartEventModalProps {
   task: Task;
   onCancel: () => void;
   onConfirm: () => void;
+  updateEvents: Dispatch<SetStateAction<TaskEvent[]>>;
 }
 
 interface NewEvent {
@@ -21,6 +23,7 @@ const StartEventModal = ({
   task,
   onCancel,
   onConfirm,
+  updateEvents,
 }: StartEventModalProps) => {
   const [isTimerOn, setIsTimerOn] = useState(false);
   const [notes, setNotes] = useState("");
@@ -55,7 +58,8 @@ const StartEventModal = ({
         body: JSON.stringify(newEvent),
       });
       if (res.ok) {
-        console.log("event added:", { newEvent });
+        const createdEvent = await res.json();
+        updateEvents((state) => [...state, createdEvent]);
         onConfirm();
       }
     } catch (err) {

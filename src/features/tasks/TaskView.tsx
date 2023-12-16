@@ -16,10 +16,11 @@ export interface Event {
 
 const TaskView = ({ task, events }: { task: Task; events: Event[] }) => {
   const [editDescription, setEditDescription] = useState(false);
+  const [eventsState, setEventsState] = useState(events);
   return (
     <div className="w-full flex flex-col items-center">
       <h2 className=" text-xl">Task: {task.name}</h2>
-      <TaskStart task={task} />
+      <TaskStart task={task} updateEvents={setEventsState} />
       <div className="flex flex-wrap rounded-md m-2 p-2">
         <button
           className="mx-1"
@@ -40,7 +41,7 @@ const TaskView = ({ task, events }: { task: Task; events: Event[] }) => {
           <p>No events to display</p>
         ) : (
           <div>
-            {events.map((event) => (
+            {eventsState.map((event) => (
               <div key={event.id} className="flex">
                 <p>{event.id}</p>
                 <p>{event.duration}</p>

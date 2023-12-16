@@ -1,8 +1,15 @@
 "use client";
 import { Task } from "@/app/bandit/dashboard/page";
 import StartEventModal from "@/components/StartEventModal";
+import { Event } from "./TaskView";
 
-const TaskStart = ({ task }: { task: Task }) => {
+const TaskStart = ({
+  task,
+  updateEvents,
+}: {
+  task: Task;
+  updateEvents: (arg0: Event[]) => void;
+}) => {
   // Start button opens a modal
   // this modal will already start a timer
   // and includes a text area to add notes
@@ -37,6 +44,7 @@ const TaskStart = ({ task }: { task: Task }) => {
             task={task}
             onCancel={() => closeModal(`task-start-modal-${task.id}`)}
             onConfirm={() => closeModal(`task-start-modal-${task.id}`)}
+            updateEvents={updateEvents}
           />
         </div>
       </dialog>

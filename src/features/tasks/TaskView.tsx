@@ -3,6 +3,7 @@ import { IconEdit } from "@tabler/icons-react";
 import { Task } from "@/app/bandit/dashboard/page";
 import { useState } from "react";
 import TaskStart from "./TaskStart";
+import { formatTimer } from "@/utils/time";
 
 export interface Event {
   id: number;
@@ -40,12 +41,24 @@ const TaskView = ({ task, events }: { task: Task; events: Event[] }) => {
         {events.length < 1 ? (
           <p>No events to display</p>
         ) : (
-          <div>
+          <div className="p-2">
             {eventsState.map((event) => (
-              <div key={event.id} className="flex">
-                <p>{event.id}</p>
-                <p>{event.duration}</p>
-                <p>{event.notes}</p>
+              <div
+                key={event.id}
+                className="flex my-1 justify-between border border-1 rounded-md w-full px-4 py-2"
+              >
+                <div className="w-1/5">
+                  <p className="text-xs">Date</p>
+                  <p>{new Date(event.date_began).toDateString()}</p>
+                </div>
+                <div className="w-1/5">
+                  <p className="text-xs">Duration</p>
+                  <p>{formatTimer(event.duration)}</p>
+                </div>
+                <div className="w-3/5">
+                  <p className="text-xs">Notes</p>
+                  <p>{event.notes}</p>
+                </div>
               </div>
             ))}
           </div>

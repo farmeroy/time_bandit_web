@@ -38,10 +38,11 @@ const TaskView = ({ task, events }: { task: Task; events: TaskEvent[] }) => {
           )}
         </div>
       </div>
-      <div className="w-full h-96 px-4">
+      <div className="w-full lg:w-[800px] h-96 px-4">
         <TaskEventLineChart taskEvents={events} />
       </div>
       <div>
+        <h2>Event Logs</h2>
         {events.length < 1 ? (
           <p>No events to display</p>
         ) : (

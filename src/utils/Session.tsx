@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const getSession = async () => {
+export const getSession = async () => {
   const url = `http://localhost:8080/auth`;
   const request = new Request(url);
   const cookieStore = cookies();

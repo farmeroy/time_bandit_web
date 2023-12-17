@@ -1,3 +1,7 @@
+"use client";
+
+import Link from "next/link";
+
 export default function Navbar() {
   return (
     <nav className="navbar bg-base-100">
@@ -19,7 +23,9 @@ export default function Navbar() {
         </button>
       </div>
       <div className="flex-1">
-        <a className="btn btn-ghost text-xl">Time Bandit</a>
+        <Link href="/" className="btn btn-ghost text-xl">
+          Time Bandit
+        </Link>
       </div>
       <div className="flex-none">
         <button className="btn btn-square btn-ghost">

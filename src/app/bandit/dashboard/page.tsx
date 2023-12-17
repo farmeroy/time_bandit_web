@@ -48,7 +48,12 @@ const Dashboard = async () => {
   // - recent tasks
   // - chart of most active tasks?
   // - line chart of various task activity
-  return <TasksTable tasks={tasks} />;
+  return (
+    <>
+      <button className="btn">New Task</button>
+      <TasksTable tasks={tasks} />
+    </>
+  );
 };
 
 export default Dashboard;

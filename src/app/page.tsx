@@ -1,6 +1,14 @@
+import { redirect } from "next/navigation";
 import Login from "../components/login";
+import { getSession } from "@/utils/Session";
 
-export default function Home() {
+export default async function Home() {
+  const session = await getSession();
+
+  if (session) {
+    redirect("/bandit");
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-around p-24">
       <h1>Time Bandit</h1>

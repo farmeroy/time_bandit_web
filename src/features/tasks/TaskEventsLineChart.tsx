@@ -9,8 +9,9 @@ interface EventDurationByDate {
 
 const getTaskDurationByDay = (events: TaskEvent[]): EventDurationByDate[] => {
   const durationByDay: { [index: string]: EventDurationByDate } = {};
+  console.log({ events });
   events.forEach((taskEvent) => {
-    const eventDate = taskEvent.date_began.toString().substring(0, 10);
+    const eventDate = new Date(taskEvent.date_began).toLocaleDateString();
     durationByDay[eventDate]
       ? (durationByDay[eventDate].duration += taskEvent.duration)
       : (durationByDay[eventDate] = {

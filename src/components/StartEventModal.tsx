@@ -1,7 +1,8 @@
 "use client";
 
 import { Task } from "@/app/bandit/dashboard/page";
-import { TaskEvent as TaskEvent } from "@/features/tasks/TaskView";
+import { TaskEvent } from "@/features/tasks/TaskView";
+import { formatTimer } from "@/utils/time";
 import { useEffect, useState, Dispatch, SetStateAction } from "react";
 
 interface StartEventModalProps {
@@ -79,19 +80,9 @@ const StartEventModal = ({
     };
   }, [isTimerOn]);
 
-  // format time
-  // divide time into hours minutes and seconds
-  const formatTimer = (totalSeconds: number) => {
-    let secs = totalSeconds % 60;
-    let mins = Math.floor(totalSeconds / 60) % 60;
-    let hrs = Math.floor(totalSeconds / 60 / 60);
-    return `${hrs}:${mins > 9 ? mins : "0" + mins}:${
-      secs > 9 ? secs : "0" + secs
-    }`;
-  };
   return (
     <div className="flex flex-col justify-between">
-      <p>{formatTimer(time)}</p>
+      <p className="text-xl self-center">{formatTimer(time)}</p>
       <p className="text-lg">
         Lets work on: <span className="text-accent">{task.name}</span>
       </p>

@@ -1,14 +1,14 @@
 "use client";
 import { Task } from "@/app/bandit/dashboard/page";
 import StartEventModal from "@/components/StartEventModal";
-import { Event } from "./TaskView";
+import { TaskEvent } from "./TaskView";
 
 const TaskStart = ({
   task,
   updateEvents,
 }: {
   task: Task;
-  updateEvents: (arg0: Event[]) => void;
+  updateEvents: (arg0: TaskEvent[]) => void;
 }) => {
   // Start button opens a modal
   // this modal will already start a timer

@@ -44,6 +44,10 @@ const Dashboard = async () => {
   if (!tasks) {
     redirect("/");
   }
+  // this should be an overview of recent activity
+  // - recent tasks
+  // - chart of most active tasks?
+  // - line chart of various task activity
   return <TasksTable tasks={tasks} />;
 };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Task } from "@/app/bandit/dashboard/page";
-import { Event as TaskEvent } from "@/features/tasks/TaskView";
+import { TaskEvent as TaskEvent } from "@/features/tasks/TaskView";
 import { useEffect, useState, Dispatch, SetStateAction } from "react";
 
 interface StartEventModalProps {

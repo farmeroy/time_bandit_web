@@ -32,7 +32,10 @@ const TaskView = ({ task, events }: { task: Task; events: TaskEvent[] }) => {
         </button>
         <div className="mx-1">
           {editDescription ? (
-            <textarea defaultValue={task.description}></textarea>
+            <div>
+              <textarea defaultValue={task.description}></textarea>
+              <button type="button">Save</button>
+            </div>
           ) : (
             <p>{task.description}</p>
           )}
@@ -48,7 +51,7 @@ const TaskView = ({ task, events }: { task: Task; events: TaskEvent[] }) => {
         ) : (
           <>
             <div>
-              <table className="table table-zebra">
+              <table className="table ">
                 <thead>
                   <tr>
                     <th>Date</th>

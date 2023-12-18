@@ -110,7 +110,10 @@ async fn router(store: store::Store) -> Router {
         .route("/tasks/add_task", post(add_task))
         .route("/events/add_event", post(add_event))
         .route("/tasks", get(get_user_tasks))
-        .route("/tasks/:task_id", get(get_task_with_events))
+        .route(
+            "/tasks/:task_id",
+            get(get_task_with_events).put(update_task),
+        )
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
@@ -236,6 +239,20 @@ async fn add_task(
     let res = state
         .store
         .add_task(new_task)
+        .await
+        .map_err(internal_error)?;
+    info!("{:?}", res);
+    Ok(Json(res))
+}
+
+async fn update_task(
+    State(state): State<AppState>,
+    Path(task_id): Path<TaskId>,
+    Json(new_task_data): Json<NewTask>,
+) -> Result<Json<Task>, (StatusCode, String)> {
+    let res = state
+        .store
+        .update_task(new_task_data, task_id)
         .await
         .map_err(internal_error)?;
     info!("{:?}", res);

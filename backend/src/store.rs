@@ -128,6 +128,34 @@ impl Store {
         }
     }
 
+    pub async fn update_task(self, new_task: NewTask, task_id: TaskId) -> Result<Task, Error> {
+        match sqlx::query(
+            "UPDATE tasks SET name = $1, description = $2 WHERE id = $3 AND user_id = $4 RETURNING 
+             id, uuid, user_id, name, description, created_on",
+        )
+        .bind(new_task.name)
+        .bind(new_task.description)
+        .bind(task_id.0)
+        .bind(new_task.user_id.0)
+        .map(|row: PgRow| Task {
+            id: TaskId(row.get("id")),
+            uuid: row.get("uuid"),
+            user_id: UserId(row.get("user_id")),
+            name: row.get("name"),
+            description: Some(row.get("description")),
+            created_on: row.get("created_on"),
+        })
+        .fetch_one(&self.connection)
+        .await
+        {
+            Ok(task) => Ok(task),
+            Err(e) => {
+                tracing::event!(tracing::Level::ERROR, "{:?}", e);
+                Err(e)
+            }
+        }
+    }
+
     pub async fn add_event(self, new_event: NewEvent) -> Result<Event, Error> {
         match sqlx::query(
             "INSERT INTO events (user_id, task_id, date_began, duration, notes)

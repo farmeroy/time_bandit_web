@@ -1,3 +1,4 @@
+import CreateNewTaskModal from "@/components/NewTaskModal";
 import TasksTable from "@/features/dashboard/OverviewTasks";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -50,7 +51,7 @@ const Dashboard = async () => {
   // - line chart of various task activity
   return (
     <>
-      <button className="btn">New Task</button>
+      <CreateNewTaskModal userID={6} />
       <TasksTable tasks={tasks} />
     </>
   );

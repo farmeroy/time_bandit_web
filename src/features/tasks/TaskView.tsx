@@ -48,7 +48,7 @@ const TaskView = ({ task, events }: { task: Task; events: TaskEvent[] }) => {
         ) : (
           <>
             <div>
-              <table className="table">
+              <table className="table table-zebra">
                 <thead>
                   <tr>
                     <th>Date</th>

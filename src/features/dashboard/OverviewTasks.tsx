@@ -5,7 +5,7 @@ import Link from "next/link";
 const TasksTable = ({ tasks }: { tasks: Task[] }) => {
   return (
     <div className="">
-      <table className="table table-zebra">
+      <table className="table">
         <thead>
           <tr>
             <th></th>

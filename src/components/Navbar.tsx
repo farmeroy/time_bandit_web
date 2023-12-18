@@ -23,7 +23,7 @@ export default function Navbar() {
         </button>
       </div>
       <div className="flex-1">
-        <Link href="/" className="btn btn-ghost text-xl">
+        <Link href="/bandit" className="btn btn-ghost text-xl">
           Time Bandit
         </Link>
       </div>

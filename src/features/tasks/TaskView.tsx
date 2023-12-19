@@ -1,7 +1,7 @@
 "use client";
 import { IconEdit } from "@tabler/icons-react";
 import { Task } from "@/app/bandit/dashboard/page";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import TaskEventStart from "./TaskEventStart";
 import { formatTimer } from "@/utils/time";
 import TaskEventLineChart from "./TaskEventsLineChart";
@@ -16,33 +16,52 @@ export interface TaskEvent {
   notes?: string;
 }
 
+interface EditDescriptionFormElements extends HTMLFormControlsCollection {
+  description: HTMLTextAreaElement;
+}
+
+interface EditDescriptionForm extends HTMLFormElement {
+  readonly elements: EditDescriptionFormElements;
+}
+
 const TaskView = ({ task, events }: { task: Task; events: TaskEvent[] }) => {
   const [editDescription, setEditDescription] = useState(false);
+  const [taskDescription, setTaskDescription] = useState(task.description);
   const [eventsState, setEventsState] = useState(events);
+
+  const handleUpdateDescription = (event: FormEvent<EditDescriptionForm>) => {
+    event.preventDefault();
+    setTaskDescription(event.currentTarget.elements.description.value);
+    setEditDescription(false);
+  };
   return (
     <div className="w-full flex flex-col items-center">
       <h2 className=" text-xl">Task: {task.name}</h2>
       <TaskEventStart task={task} updateEvents={setEventsState} />
       <div className="flex flex-wrap rounded-md m-2 p-2">
-        <button
-          className="mx-1"
-          onClick={() => setEditDescription((state) => !state)}
-        >
-          <IconEdit />
-        </button>
-        <div className="mx-1">
+        <div className="mx-1 flex">
           {editDescription ? (
-            <div>
-              <textarea defaultValue={task.description}></textarea>
-              <button type="button">Save</button>
-            </div>
+            <form onSubmit={handleUpdateDescription}>
+              <textarea
+                name="description"
+                defaultValue={taskDescription}
+              ></textarea>
+              <div>
+                <button type="submit">Save</button>
+                <button type="button" onClick={() => setEditDescription(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
           ) : (
-            <p>{task.description}</p>
+            <>
+              <button className="mx-1" onClick={() => setEditDescription(true)}>
+                <IconEdit />
+              </button>
+              <p>{taskDescription}</p>
+            </>
           )}
         </div>
-      </div>
-      <div className="w-full lg:w-[800px] h-96 px-4">
-        <TaskEventLineChart taskEvents={eventsState} />
       </div>
       <div className="p-4">
         <h2>Event Logs</h2>
@@ -50,6 +69,9 @@ const TaskView = ({ task, events }: { task: Task; events: TaskEvent[] }) => {
           <p>No events to display</p>
         ) : (
           <>
+            <div className="w-full lg:w-[800px] h-96">
+              <TaskEventLineChart taskEvents={eventsState} />
+            </div>
             <div>
               <table className="table ">
                 <thead>

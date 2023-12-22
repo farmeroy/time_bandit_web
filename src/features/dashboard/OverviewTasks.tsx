@@ -1,8 +1,8 @@
 "use client";
-import { Task } from "@/app/bandit/dashboard/page";
+import { TaskWithEvents } from "@/app/bandit/dashboard/page";
 import Link from "next/link";
 
-const TasksTable = ({ tasks }: { tasks: Task[] }) => {
+const TasksTable = ({ tasks }: { tasks: TaskWithEvents[] }) => {
   return (
     <div className="">
       <table className="table">
@@ -16,18 +16,18 @@ const TasksTable = ({ tasks }: { tasks: Task[] }) => {
         </thead>
         <tbody>
           {tasks.map((task) => (
-            <tr key={task.id} className="hover">
+            <tr key={task.task.id} className="hover">
               <td>
                 <Link
-                  href={`/bandit/tasks/${task.id}`}
+                  href={`/bandit/tasks/${task.task.id}`}
                   className="btn btn-primary m-2"
                 >
                   View Task
                 </Link>
               </td>
-              <td>{task.name}</td>
-              <td>{task.created_on.toString().substring(0, 10)}</td>
-              <td>{task.description}</td>
+              <td>{task.task.name}</td>
+              <td>{task.task.created_on.toString().substring(0, 10)}</td>
+              <td>{task.task.description}</td>
             </tr>
           ))}
         </tbody>

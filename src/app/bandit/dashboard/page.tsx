@@ -1,5 +1,6 @@
 import CreateNewTaskModal from "@/components/NewTaskModal";
 import TasksTable from "@/features/dashboard/OverviewTasks";
+import { TaskEvent } from "@/features/tasks/TaskView";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -10,6 +11,11 @@ export interface Task {
   name: string;
   description: string;
   created_on: Date;
+}
+
+export interface TaskWithEvents {
+  task: Task;
+  events: TaskEvent[];
 }
 
 const getTasks = async () => {
@@ -41,7 +47,7 @@ const getTasks = async () => {
 };
 
 const Dashboard = async () => {
-  const tasks: Task[] = await getTasks();
+  const tasks: TaskWithEvents[] = await getTasks();
   if (!tasks) {
     redirect("/");
   }

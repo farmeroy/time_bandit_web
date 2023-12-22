@@ -109,7 +109,7 @@ async fn router(store: store::Store) -> Router {
     Router::new()
         .route("/tasks/add_task", post(add_task))
         .route("/events/add_event", post(add_event))
-        .route("/tasks", get(get_user_tasks))
+        .route("/tasks", get(get_user_tasks_with_events))
         .route(
             "/tasks/:task_id",
             get(get_task_with_events).put(update_task),
@@ -317,17 +317,22 @@ async fn get_task_with_events(
 ) -> Result<Json<TaskWithEvents>, (StatusCode, String)> {
     let task = state
         .store
-        .clone()
-        .get_task_by_id(task_id.clone())
+        .get_task_with_events_by_task_id(task_id)
         .await
         .map_err(internal_error)?;
-    let events = state
+    Ok(Json(task))
+}
+
+async fn get_user_tasks_with_events(
+    State(state): State<AppState>,
+    Extension(user_id): Extension<UserId>,
+) -> Result<Json<Vec<TaskWithEvents>>, (StatusCode, String)> {
+    let res = state
         .store
-        .clone()
-        .get_events_by_task(task_id.clone())
+        .get_user_tasks_with_events(user_id)
         .await
         .map_err(internal_error)?;
-    Ok(Json(TaskWithEvents { task, events }))
+    Ok(Json(res))
 }
 
 fn internal_error<E>(err: E) -> (StatusCode, String)

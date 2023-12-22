@@ -1,12 +1,18 @@
 use bcrypt;
+use chrono::{DateTime, Utc};
 use sqlx::{
     postgres::{PgPool, PgPoolOptions, PgRow},
+    types::Json,
     Error, Row,
 };
 use tracing::info;
+use uuid::Uuid;
 
 use crate::{
-    models::{Event, EventId, NewEvent, NewTask, SessionId, Task, TaskId, User, UserEmail, UserId},
+    models::{
+        Event, EventId, NewEvent, NewTask, SessionId, Task, TaskId, TaskWithEvents, User,
+        UserEmail, UserId,
+    },
     LoginDetails,
 };
 
@@ -108,13 +114,13 @@ impl Store {
         )
         .bind(new_task.user_id.0)
         .bind(new_task.name)
-        .bind(new_task.description)
+        .bind(new_task.description.unwrap_or_default())
         .map(|row: PgRow| Task {
             id: TaskId(row.get("id")),
             uuid: row.get("uuid"),
             user_id: UserId(row.get("user_id")),
             name: row.get("name"),
-            description: Some(row.get("description")),
+            description: row.get("description"),
             created_on: row.get("created_on"),
         })
         .fetch_one(&self.connection)
@@ -142,7 +148,7 @@ impl Store {
             uuid: row.get("uuid"),
             user_id: UserId(row.get("user_id")),
             name: row.get("name"),
-            description: Some(row.get("description")),
+            description: row.get("description"),
             created_on: row.get("created_on"),
         })
         .fetch_one(&self.connection)
@@ -201,7 +207,7 @@ impl Store {
             uuid: row.get("uuid"),
             user_id: UserId(row.get("user_id")),
             name: row.get("name"),
-            description: Some(row.get("description")),
+            description: row.get("description"),
             created_on: row.get("created_on"),
         })
         .fetch_all(&self.connection)
@@ -261,7 +267,7 @@ impl Store {
             uuid: row.get("uuid"),
             user_id: UserId(row.get("user_id")),
             name: row.get("name"),
-            description: Some(row.get("description")),
+            description: row.get("description"),
             created_on: row.get("created_on"),
         })
         .fetch_one(&self.connection)
@@ -275,15 +281,101 @@ impl Store {
         }
     }
 
-    // pub async fn get_task_with_events_by_task_id(
-    //     self,
-    //     task_id: TaskId,
-    // ) -> Result<Vev<TaskWithEvents>, Error> {
-    //     let task = self
-    //         .clone()
-    //         .get_task_by_id(task_id.clone())
-    //         .await
-    //         .unwrap_err();
-    //     let events = self.get_events_by_task(task_id.clone()).await.unwrap_err();
-    // }
+    pub async fn get_task_with_events_by_task_id(
+        self,
+        task_id: TaskId,
+    ) -> Result<TaskWithEvents, Error> {
+        let task = sqlx::query(
+            "SELECT id, uuid, user_id, name, description, created_on FROM tasks WHERE id = $1",
+        )
+        .bind(&task_id.0)
+        .map(|row: PgRow| Task {
+            id: TaskId(row.get("id")),
+            uuid: row.get("uuid"),
+            user_id: UserId(row.get("user_id")),
+            name: row.get("name"),
+            description: row.get("description"),
+            created_on: row.get("created_on"),
+        })
+        .fetch_optional(&self.connection)
+        .await;
+        let events = sqlx::query("SELECT * FROM events WHERE task_id = $1")
+            .bind(task_id.0)
+            .map(|row: PgRow| Event {
+                id: EventId(row.get("id")),
+                uuid: row.get("uuid"),
+                task_id: TaskId(row.get("task_id")),
+                user_id: UserId(row.get("user_id")),
+                date_began: row.get("date_began"),
+                duration: row.get("duration"),
+                notes: Some(row.get("notes")),
+            })
+            .fetch_all(&self.connection)
+            .await;
+
+        match (task, events) {
+            (Ok(Some(task)), Ok(events)) => Ok(TaskWithEvents { task, events }),
+            (Ok(None), _) => Err(Error::RowNotFound),
+            (Err(err), _) | (_, Err(err)) => {
+                tracing::event!(tracing::Level::ERROR, "{:?}", err);
+                Err(err)
+            }
+        }
+    }
+    pub async fn get_user_tasks_with_events(
+        self,
+        user_id: UserId,
+    ) -> Result<Vec<TaskWithEvents>, Error> {
+        let query = sqlx::query(
+            r#"
+        SELECT
+            t.id AS task_id,
+            t.uuid AS task_uuid,
+            t.user_id AS task_user_id,
+            t.name AS task_name,
+            t.description AS task_description,
+            t.created_on AS task_created_on,
+
+          COALESCE(jsonb_agg(json_build_object(
+                'id', e.id,
+                'uuid', e.uuid,
+                'user_id', e.user_id,
+                'task_id', e.task_id,
+                'notes', e.notes,
+                'date_began', e.date_began,
+                'duration', e.duration
+            )), '[]'::jsonb) AS events
+
+        FROM
+            tasks t
+        LEFT JOIN
+            events e ON t.id = e.task_id
+        WHERE
+            t.user_id = $1
+        GROUP BY
+            t.id, t.uuid, t.user_id, t.name, t.description, t.created_on
+    "#,
+        );
+
+        let result = query.bind(user_id.0).fetch_all(&self.connection).await?;
+
+        let tasks_with_events: Result<Vec<TaskWithEvents>, Error> = result
+            .into_iter()
+            .map(|row: PgRow| {
+                let events: Json<Vec<Event>> = row.try_get("events").unwrap_or_default();
+                Ok(TaskWithEvents {
+                    task: Task {
+                        id: TaskId(row.get("task_id")),
+                        uuid: row.get("task_uuid"),
+                        user_id: UserId(row.get("task_user_id")),
+                        name: row.get("task_name"),
+                        description: row.get("task_description"),
+                        created_on: row.get("task_created_on"),
+                    },
+                    events: events.0,
+                })
+            })
+            .collect();
+        tasks_with_events
+    }
 }

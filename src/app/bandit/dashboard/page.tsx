@@ -1,4 +1,5 @@
-import CreateNewTaskModal from "@/components/NewTaskModal";
+import NewTaskModal from "@/components/NewTaskModal";
+import DashBoard from "@/features/dashboard/Dashboard";
 import TasksTable from "@/features/dashboard/OverviewTasks";
 import { TaskEvent } from "@/features/tasks/TaskView";
 import { cookies } from "next/headers";
@@ -46,7 +47,7 @@ const getTasks = async () => {
   }
 };
 
-const Dashboard = async () => {
+const Page = async () => {
   const tasks: TaskWithEvents[] = await getTasks();
   if (!tasks) {
     redirect("/");
@@ -55,12 +56,7 @@ const Dashboard = async () => {
   // - recent tasks
   // - chart of most active tasks?
   // - line chart of various task activity
-  return (
-    <>
-      <CreateNewTaskModal userID={6} />
-      <TasksTable tasks={tasks} />
-    </>
-  );
+  return <DashBoard tasks={tasks} />;
 };
 
-export default Dashboard;
+export default Page;

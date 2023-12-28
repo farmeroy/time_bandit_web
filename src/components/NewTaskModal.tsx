@@ -1,10 +1,11 @@
 "use client";
 
+import { TaskWithEvents } from "@/app/bandit/dashboard/page";
 import { useState, Dispatch, SetStateAction } from "react";
 
 interface CreateNewTaskModalProps {
   userID: number;
-  // updateTasks: Dispatch<SetStateAction<Task[]>>;
+  updateTasks: Dispatch<SetStateAction<TaskWithEvents[]>>;
 }
 
 export interface NewTask {
@@ -13,9 +14,7 @@ export interface NewTask {
   description: string;
 }
 
-const CreateNewTaskModal = ({
-  userID, // updateTasks,
-}: CreateNewTaskModalProps) => {
+const NewTaskModal = ({ userID, updateTasks }: CreateNewTaskModalProps) => {
   const [notes, setNotes] = useState("");
   const [taskName, setTaskName] = useState("");
 
@@ -40,8 +39,8 @@ const CreateNewTaskModal = ({
       });
       if (res.ok) {
         const createdTask = await res.json();
-        // updateTasks((state) => [...state, createdTask]);
-        console.log("OK");
+        const createdTaskWithEvents = { task: createdTask, events: [] };
+        updateTasks((state) => [...state, createdTaskWithEvents]);
         closeModal(`create-task-modal`);
       }
     } catch (err) {
@@ -109,4 +108,4 @@ const CreateNewTaskModal = ({
   );
 };
 
-export default CreateNewTaskModal;
+export default NewTaskModal;

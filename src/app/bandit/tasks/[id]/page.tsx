@@ -32,8 +32,12 @@ const getEvents = async (id: number) => {
 
 const TaskPage = async ({ params }: { params: { id: number } }) => {
   const res = await getEvents(params.id);
-  console.log({ res: res.status });
-  if (!res) {
+  // @TODO: Create some kind of wrapper that always returns the user to the login page if there is no user.
+  // Here, we check if there is a task. This is not ideal,
+  // because if there is no task here, it is actually
+  // because the user is logged out.
+  //
+  if (!res.task) {
     redirect("/");
   }
   return <TaskView task={res.task} events={res.events} />;

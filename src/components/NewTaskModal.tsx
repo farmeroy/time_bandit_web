@@ -19,7 +19,7 @@ const NewTaskModal = ({ userID, updateTasks }: CreateNewTaskModalProps) => {
   const [taskName, setTaskName] = useState("");
 
   const handleCreateTask = async () => {
-    const url = `//localhost:8080/tasks/add_task`;
+    const url = `//localhost:8080/tasks/`;
     const newTask: NewTask = {
       name: taskName,
       user_id: userID,

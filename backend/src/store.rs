@@ -1,12 +1,10 @@
 use bcrypt;
-use chrono::{DateTime, Utc};
 use sqlx::{
     postgres::{PgPool, PgPoolOptions, PgRow},
     types::Json,
     Error, Row,
 };
 use tracing::info;
-use uuid::Uuid;
 
 use crate::{
     models::{

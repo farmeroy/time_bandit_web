@@ -21,7 +21,7 @@ pub struct UserId(pub i32);
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Clone, Type)]
 #[sqlx(transparent)]
-pub struct EventId(pub i32);
+pub struct TaskEventId(pub i32);
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Clone, Type)]
 #[sqlx(transparent)]
@@ -57,8 +57,8 @@ pub struct NewTask {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
-pub struct Event {
-    pub id: EventId,
+pub struct TaskEvent {
+    pub id: TaskEventId,
     pub uuid: Uuid,
     pub user_id: UserId,
     pub task_id: TaskId,
@@ -66,14 +66,14 @@ pub struct Event {
     pub duration: i64,
     pub notes: Option<String>,
 }
-impl PgHasArrayType for Event {
+impl PgHasArrayType for TaskEvent {
     fn array_type_info() -> PgTypeInfo {
         PgTypeInfo::with_name("_event")
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NewEvent {
+pub struct NewTaskEvent {
     pub user_id: UserId,
     pub task_id: TaskId,
     pub date_began: DateTime<Utc>,
@@ -82,7 +82,7 @@ pub struct NewEvent {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TaskWithEvents {
+pub struct TaskWithTaskEvents {
     pub task: Task,
-    pub events: Vec<Event>,
+    pub events: Vec<TaskEvent>,
 }

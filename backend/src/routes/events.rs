@@ -4,16 +4,16 @@ use tracing::info;
 
 use crate::{
     internal_error,
-    models::{Event, NewEvent, UserId},
+    models::{NewTaskEvent, TaskEvent, UserId},
     AppState,
 };
 
 pub async fn add_event(
     State(state): State<AppState>,
     Extension(user_id): Extension<UserId>,
-    Json(new_event): Json<NewEvent>,
-) -> Result<Json<Event>, (StatusCode, String)> {
-    let new_event = NewEvent {
+    Json(new_event): Json<NewTaskEvent>,
+) -> Result<Json<TaskEvent>, (StatusCode, String)> {
+    let new_event = NewTaskEvent {
         user_id,
         task_id: new_event.task_id,
         date_began: new_event.date_began,

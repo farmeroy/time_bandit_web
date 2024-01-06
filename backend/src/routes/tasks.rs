@@ -7,7 +7,7 @@ use tracing::info;
 
 use crate::{
     internal_error,
-    models::{NewTask, Task, TaskId, TaskWithEvents, UserId},
+    models::{NewTask, Task, TaskId, TaskWithTaskEvents, UserId},
     AppState,
 };
 
@@ -48,7 +48,7 @@ pub async fn update_task(
 pub async fn get_user_tasks_with_events(
     State(state): State<AppState>,
     Extension(user_id): Extension<UserId>,
-) -> Result<Json<Vec<TaskWithEvents>>, (StatusCode, String)> {
+) -> Result<Json<Vec<TaskWithTaskEvents>>, (StatusCode, String)> {
     let res = state
         .store
         .get_user_tasks_with_events(user_id)
@@ -61,7 +61,7 @@ pub async fn get_one_task_with_events(
     State(state): State<AppState>,
     Extension(user_id): Extension<UserId>,
     Path(task_id): Path<TaskId>,
-) -> Result<Json<TaskWithEvents>, (StatusCode, String)> {
+) -> Result<Json<TaskWithTaskEvents>, (StatusCode, String)> {
     let task = state
         .store
         .get_task_with_events_by_task_id(task_id)

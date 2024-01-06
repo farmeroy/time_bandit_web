@@ -8,8 +8,8 @@ use tracing::info;
 
 use crate::{
     models::{
-        Event, EventId, NewEvent, NewTask, SessionId, Task, TaskId, TaskWithEvents, User,
-        UserEmail, UserId,
+        NewTask, NewTaskEvent, SessionId, Task, TaskEvent, TaskEventId, TaskId, TaskWithTaskEvents,
+        User, UserEmail, UserId,
     },
     LoginDetails,
 };
@@ -160,7 +160,7 @@ impl Store {
         }
     }
 
-    pub async fn add_event(self, new_event: NewEvent) -> Result<Event, Error> {
+    pub async fn add_event(self, new_event: NewTaskEvent) -> Result<TaskEvent, Error> {
         match sqlx::query(
             "INSERT INTO events (user_id, task_id, date_began, duration, notes)
             VALUES ($1, $2, $3, $4, $5)
@@ -171,8 +171,8 @@ impl Store {
         .bind(new_event.date_began)
         .bind(new_event.duration)
         .bind(new_event.notes)
-        .map(|row: PgRow| Event {
-            id: EventId(row.get("id")),
+        .map(|row: PgRow| TaskEvent {
+            id: TaskEventId(row.get("id")),
             uuid: row.get("uuid"),
             user_id: UserId(row.get("user_id")),
             task_id: TaskId(row.get("task_id")),
@@ -221,7 +221,7 @@ impl Store {
     }
 
     // currently unused - events are fetched together with the associated task in get_one_task_with_events
-    pub async fn get_events_by_task(self, task_id: TaskId) -> Result<Vec<Event>, Error> {
+    pub async fn get_events_by_task(self, task_id: TaskId) -> Result<Vec<TaskEvent>, Error> {
         match sqlx::query(
             "
             SELECT id, uuid, task_id, user_id, date_began, duration, notes
@@ -230,8 +230,8 @@ impl Store {
             ",
         )
         .bind(task_id.0)
-        .map(|row: PgRow| Event {
-            id: EventId(row.get("id")),
+        .map(|row: PgRow| TaskEvent {
+            id: TaskEventId(row.get("id")),
             uuid: row.get("uuid"),
             task_id: TaskId(row.get("task_id")),
             user_id: UserId(row.get("user_id")),
@@ -285,7 +285,7 @@ impl Store {
     pub async fn get_task_with_events_by_task_id(
         self,
         task_id: TaskId,
-    ) -> Result<TaskWithEvents, Error> {
+    ) -> Result<TaskWithTaskEvents, Error> {
         let task = sqlx::query(
             "SELECT id, uuid, user_id, name, description, created_on FROM tasks WHERE id = $1",
         )
@@ -302,8 +302,8 @@ impl Store {
         .await;
         let events = sqlx::query("SELECT * FROM events WHERE task_id = $1")
             .bind(task_id.0)
-            .map(|row: PgRow| Event {
-                id: EventId(row.get("id")),
+            .map(|row: PgRow| TaskEvent {
+                id: TaskEventId(row.get("id")),
                 uuid: row.get("uuid"),
                 task_id: TaskId(row.get("task_id")),
                 user_id: UserId(row.get("user_id")),
@@ -315,7 +315,7 @@ impl Store {
             .await;
 
         match (task, events) {
-            (Ok(Some(task)), Ok(events)) => Ok(TaskWithEvents { task, events }),
+            (Ok(Some(task)), Ok(events)) => Ok(TaskWithTaskEvents { task, events }),
             (Ok(None), _) => Err(Error::RowNotFound),
             (Err(err), _) | (_, Err(err)) => {
                 tracing::event!(tracing::Level::ERROR, "{:?}", err);
@@ -326,7 +326,7 @@ impl Store {
     pub async fn get_user_tasks_with_events(
         self,
         user_id: UserId,
-    ) -> Result<Vec<TaskWithEvents>, Error> {
+    ) -> Result<Vec<TaskWithTaskEvents>, Error> {
         let query = sqlx::query(
             r#"
         SELECT
@@ -360,11 +360,11 @@ impl Store {
 
         let result = query.bind(user_id.0).fetch_all(&self.connection).await?;
 
-        let tasks_with_events: Result<Vec<TaskWithEvents>, Error> = result
+        let tasks_with_events: Result<Vec<TaskWithTaskEvents>, Error> = result
             .into_iter()
             .map(|row: PgRow| {
-                let events: Json<Vec<Event>> = row.try_get("events").unwrap_or_default();
-                Ok(TaskWithEvents {
+                let events: Json<Vec<TaskEvent>> = row.try_get("events").unwrap_or_default();
+                Ok(TaskWithTaskEvents {
                     task: Task {
                         id: TaskId(row.get("task_id")),
                         uuid: row.get("task_uuid"),

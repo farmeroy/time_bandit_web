@@ -41,6 +41,7 @@ struct AppState {
     key: Key,
 }
 
+// this has to be implemented to share the store
 #[async_trait]
 impl<S> FromRequestParts<S> for store::Store
 where
@@ -56,21 +57,22 @@ where
     }
 }
 
+// this allows the Pool to be shared with AppState
 impl FromRef<AppState> for Pool<Postgres> {
     fn from_ref(state: &AppState) -> Self {
         state.store.connection.clone()
+    }
+}
+// this implementation allows the store to be shared with AppState
+impl FromRef<AppState> for store::Store {
+    fn from_ref(state: &AppState) -> Self {
+        state.store.clone()
     }
 }
 
 impl FromRef<AppState> for Key {
     fn from_ref(state: &AppState) -> Self {
         state.key.clone()
-    }
-}
-
-impl FromRef<AppState> for store::Store {
-    fn from_ref(state: &AppState) -> Self {
-        state.store.clone()
     }
 }
 
@@ -118,7 +120,7 @@ async fn router(store: store::Store) -> Router {
             "/tasks/:task_id",
             get(get_one_task_with_events).put(update_task),
         )
-        .route("/events/add_event", post(add_event))
+        .route("/events", post(add_event))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,

@@ -38,7 +38,7 @@ const StartEventModal = ({
     setTime(0);
     setIsTimerOn(false);
 
-    const url = `//localhost:8080/events/add_event`;
+    const url = `//localhost:8080/events`;
     const newEvent: NewEvent = {
       user_id: task.user_id,
       task_id: task.id,

@@ -191,6 +191,7 @@ impl Store {
         }
     }
 
+    // currently supplanted by get_one_task_with_events
     pub async fn get_tasks_by_user(self, user_id: UserId) -> Result<Vec<Task>, Error> {
         match sqlx::query(
             "
@@ -219,6 +220,7 @@ impl Store {
         }
     }
 
+    // currently unused - events are fetched together with the associated task in get_one_task_with_events
     pub async fn get_events_by_task(self, task_id: TaskId) -> Result<Vec<Event>, Error> {
         match sqlx::query(
             "
@@ -251,6 +253,7 @@ impl Store {
         }
     }
 
+    // currently supplanted by get_task_with_events_by_task_id
     pub async fn get_task_by_id(self, task_id: TaskId) -> Result<Task, Error> {
         match sqlx::query(
             "

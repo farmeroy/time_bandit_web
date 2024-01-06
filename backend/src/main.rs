@@ -18,7 +18,7 @@ use tracing::info;
 
 use axum::{
     async_trait,
-    extract::{FromRef, FromRequestParts, Path, State},
+    extract::{FromRef, FromRequestParts},
     http::{request::Parts, Method, StatusCode},
     middleware::{self},
     routing::{get, post},

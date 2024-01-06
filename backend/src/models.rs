@@ -85,4 +85,6 @@ pub struct NewTaskEvent {
 pub struct TaskWithTaskEvents {
     pub task: Task,
     pub events: Vec<TaskEvent>,
+    pub total_duration: i64,
+    pub updated_on: DateTime<Utc>,
 }

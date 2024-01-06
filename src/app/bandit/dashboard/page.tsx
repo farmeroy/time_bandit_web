@@ -11,12 +11,14 @@ export interface Task {
   user_id: number;
   name: string;
   description: string;
-  created_on: Date;
+  created_on: string;
 }
 
 export interface TaskWithEvents {
   task: Task;
   events: TaskEvent[];
+  total_duration: number;
+  updated_on: string;
 }
 
 const getTasks = async () => {

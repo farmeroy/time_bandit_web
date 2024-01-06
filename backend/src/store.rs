@@ -286,40 +286,64 @@ impl Store {
         self,
         task_id: TaskId,
     ) -> Result<TaskWithTaskEvents, Error> {
-        let task = sqlx::query(
-            "SELECT id, uuid, user_id, name, description, created_on FROM tasks WHERE id = $1",
-        )
-        .bind(&task_id.0)
-        .map(|row: PgRow| Task {
-            id: TaskId(row.get("id")),
-            uuid: row.get("uuid"),
-            user_id: UserId(row.get("user_id")),
-            name: row.get("name"),
-            description: row.get("description"),
-            created_on: row.get("created_on"),
-        })
-        .fetch_optional(&self.connection)
-        .await;
-        let events = sqlx::query("SELECT * FROM events WHERE task_id = $1")
-            .bind(task_id.0)
-            .map(|row: PgRow| TaskEvent {
-                id: TaskEventId(row.get("id")),
-                uuid: row.get("uuid"),
-                task_id: TaskId(row.get("task_id")),
-                user_id: UserId(row.get("user_id")),
-                date_began: row.get("date_began"),
-                duration: row.get("duration"),
-                notes: Some(row.get("notes")),
-            })
-            .fetch_all(&self.connection)
-            .await;
+        match sqlx::query(
+            r#"
+        SELECT
+            t.id AS task_id,
+            t.uuid AS task_uuid,
+            t.user_id AS task_user_id,
+            t.name AS task_name,
+            t.description AS task_description,
+            t.created_on AS task_created_on,
 
-        match (task, events) {
-            (Ok(Some(task)), Ok(events)) => Ok(TaskWithTaskEvents { task, events }),
-            (Ok(None), _) => Err(Error::RowNotFound),
-            (Err(err), _) | (_, Err(err)) => {
-                tracing::event!(tracing::Level::ERROR, "{:?}", err);
-                Err(err)
+          COALESCE(jsonb_agg(json_build_object(
+                'id', e.id,
+                'uuid', e.uuid,
+                'user_id', e.user_id,
+                'task_id', e.task_id,
+                'notes', e.notes,
+                'date_began', e.date_began,
+                'duration', e.duration
+            )), '[]'::jsonb) AS events,
+
+            CAST(COALESCE(SUM(e.duration), 0) AS BIGINT) AS total_duration,
+
+            COALESCE(MAX(e.date_began), t.created_on) AS updated_on
+
+        FROM
+            tasks t
+        LEFT JOIN
+            events e ON t.id = e.task_id
+        WHERE
+            t.id = $1
+        GROUP BY
+            t.id, t.uuid, t.user_id, t.name, t.description, t.created_on
+    "#,
+        )
+        .bind(task_id.0)
+        .map(|row: PgRow| {
+            let events: Json<Vec<TaskEvent>> = row.try_get("events").unwrap_or_default();
+            TaskWithTaskEvents {
+                task: Task {
+                    id: TaskId(row.get("task_id")),
+                    uuid: row.get("task_uuid"),
+                    user_id: UserId(row.get("task_user_id")),
+                    name: row.get("task_name"),
+                    description: row.get("task_description"),
+                    created_on: row.get("task_created_on"),
+                },
+                events: events.0,
+                total_duration: row.get("total_duration"),
+                updated_on: row.get("updated_on"),
+            }
+        })
+        .fetch_one(&self.connection)
+        .await
+        {
+            Ok(tasks_with_events) => Ok(tasks_with_events),
+            Err(e) => {
+                tracing::event!(tracing::Level::ERROR, "{:?}", e);
+                Err(e)
             }
         }
     }
@@ -345,7 +369,11 @@ impl Store {
                 'notes', e.notes,
                 'date_began', e.date_began,
                 'duration', e.duration
-            )), '[]'::jsonb) AS events
+            )), '[]'::jsonb) AS events,
+
+            CAST(COALESCE(SUM(e.duration), 0) AS BIGINT) AS total_duration,
+
+            COALESCE(MAX(e.date_began), t.created_on) AS updated_on
 
         FROM
             tasks t
@@ -374,6 +402,8 @@ impl Store {
                         created_on: row.get("task_created_on"),
                     },
                     events: events.0,
+                    total_duration: row.get("total_duration"),
+                    updated_on: row.get("updated_on"),
                 })
             })
             .collect();

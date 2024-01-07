@@ -29,10 +29,35 @@ const TaskView = ({ task, events }: { task: Task; events: TaskEvent[] }) => {
   const [taskDescription, setTaskDescription] = useState(task.description);
   const [eventsState, setEventsState] = useState(events);
 
-  const handleUpdateDescription = (event: FormEvent<EditDescriptionForm>) => {
+  const handleUpdateDescription = async (
+    event: FormEvent<EditDescriptionForm>
+  ) => {
     event.preventDefault();
-    setTaskDescription(event.currentTarget.elements.description.value);
-    setEditDescription(false);
+    const url = `//localhost:8080/tasks/${task.id}`;
+    const updatedTask: Task = {
+      ...task,
+      description: event.currentTarget.elements.description.value,
+    };
+    try {
+      const res = await fetch(url, {
+        method: "PUT",
+        mode: "cors",
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Origin": `http:${url}`,
+        },
+        credentials: "include",
+        body: JSON.stringify(updatedTask),
+      });
+      if (res.ok) {
+        const update = await res.json();
+        setTaskDescription(update.description);
+        setEditDescription(false);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
   return (
     <div className="w-full flex flex-col items-center">

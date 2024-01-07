@@ -111,11 +111,10 @@ async fn router(store: store::Store) -> Router {
             CONTENT_TYPE,
         ])
         .allow_credentials(true)
-        .allow_methods([Method::GET, Method::POST])
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
         .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap());
     Router::new()
-        .route("/tasks", post(add_task))
-        .route("/tasks", get(get_user_tasks_with_events))
+        .route("/tasks", post(add_task).get(get_user_tasks_with_events))
         .route(
             "/tasks/:task_id",
             get(get_one_task_with_events).put(update_task),

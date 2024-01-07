@@ -74,6 +74,24 @@ impl Store {
         }
     }
 
+    pub async fn delete_user_session(self, user_id: UserId) -> Result<UserId, Error> {
+        match sqlx::query(
+            "DELETE FROM sessions
+               WHERE user_id = $1 
+            ",
+        )
+        .bind(&user_id.0)
+        .execute(&self.connection)
+        .await
+        {
+            Ok(_) => Ok(user_id),
+            Err(e) => {
+                tracing::event!(tracing::Level::ERROR, "{:?}", e);
+                Err(e)
+            }
+        }
+    }
+
     pub async fn create_session(self, user: User, password: String) -> Result<SessionId, Error> {
         info!("Create session");
         if bcrypt::verify(password, &user.password).unwrap_or_default() == false {
@@ -99,7 +117,10 @@ impl Store {
         .await
         {
             Ok(session_id) => Ok(session_id),
-            Err(e) => Err(e),
+            Err(e) => {
+                tracing::event!(tracing::Level::ERROR, "{:?}", e);
+                Err(e)
+            }
         }
     }
 
